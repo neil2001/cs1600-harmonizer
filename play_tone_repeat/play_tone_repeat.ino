@@ -62,9 +62,15 @@ void startHarmony() {
 }
 
 void ADC_Handler() {
-  uint16_t result = ADC->RESULT.reg; // Read ADC result
   // Process the ADC result here
   // this should put it in the buffer
+  Serial.println("adc handler called");
+  adcCount = (adcCount + 1) % 100000;
+  if (resultNumber >= MAX_RESULTS) {
+    ADC->CTRLA.bit.ENABLE = 0;  // Turn off ADC
+  } else {
+    results [resultNumber++] = ADC->RESULT.reg;
+  }
 }
 
 void TC2_Handler() {
