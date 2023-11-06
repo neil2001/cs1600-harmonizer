@@ -62,18 +62,18 @@ void setup ()
   Serial.println ("setting up ADC");
   // attachInterrupt(adcPin, ADC_Handler, CHANGE);
 
-  ADC->CTRLB.reg = ADC_CTRLB_RESSEL_12BIT | ADC_CTRLB_PRESCALER_DIV16 | ADC_CTRLB_FREERUN; // 12-bit resolution, prescaler of 16
-  while(ADC->STATUS.bit.SYNCBUSY);
-  ADC->CTRLA.reg = ADC_CTRLA_ENABLE | ADC_CTRLA_PRESCALER_DIV512; // Enable ADC, free run mode, prescaler of 512
-  while(ADC->STATUS.bit.SYNCBUSY);
+  // ADC->CTRLB.reg = ADC_CTRLB_RESSEL_12BIT | ADC_CTRLB_PRESCALER_DIV16 | ADC_CTRLB_FREERUN; // 12-bit resolution, prescaler of 16
+  // while(ADC->STATUS.bit.SYNCBUSY);
+  // ADC->CTRLA.reg = ADC_CTRLA_ENABLE | ADC_CTRLA_PRESCALER_DIV512; // Enable ADC, free run mode, prescaler of 512
+  // while(ADC->STATUS.bit.SYNCBUSY);
   
-  // Set reference voltage to AVcc (5V)
-  ADC->REFCTRL.reg = ADC_REFCTRL_REFSEL_INTVCC1;
-  while(ADC->STATUS.bit.SYNCBUSY);
+  // // Set reference voltage to AVcc (5V)
+  // ADC->REFCTRL.reg = ADC_REFCTRL_REFSEL_INTVCC1;
+  // while(ADC->STATUS.bit.SYNCBUSY);
 
-  // Set up ADC event system
-  NVIC_SetPriority(ADC_IRQn, 0);
-  NVIC_EnableIRQ(ADC_IRQn);
+  // // Set up ADC event system
+  // NVIC_SetPriority(ADC_IRQn, 0);
+  // NVIC_EnableIRQ(ADC_IRQn);
 
   // ADC->CTRLA.bit.ENABLE = 0;  // Disable ADC
   // ADC->CTRLB.bit.PRESCALER = 0x04; // Set prescaler to 16
