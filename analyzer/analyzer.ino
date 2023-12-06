@@ -23,20 +23,8 @@ void setup() {
   meter.begin(A1, 45000);             // Initialize A0 at sample rate of 45kHz
 }
 
-unsigned long lastTime = 0;
-unsigned long duration = 0;
-int TRIGGER = 0;
-
 void playTone(int freq, long duration){
-  // if (TRIGGER){
-  //   noTone(SPEAKER_PIN);
-  // } 
-  // else {
-  //   tone(SPEAKER_PIN, freq, duration);
-  //   lastTime = millis();
-  // }
   tone(SPEAKER_PIN, freq, duration);
-
 }
 
 void loop() {
@@ -49,18 +37,5 @@ void loop() {
   if (frequency > 0){
     Serial.print(frequency);
     Serial.println(" Hz");
-
-    // playTone(frequency, 50);
-  tone(SPEAKER_PIN, frequency, 50);
-
-  }
-
-
-  if (millis() - lastTime > duration){
-    TRIGGER = 1;
-    lastTime = millis();
-  }
-  else {
-    TRIGGER = 0;
   }
 }

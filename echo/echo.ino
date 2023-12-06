@@ -1,22 +1,52 @@
-const int adcPin = A1;  // A0
 
-const int MAX_RESULTS = 256;
+const int ADC_PIN = A1;
+const int DAC_PIN = A0;
+const int SPEAKER_PIN = 10;
+const int BASELINE = 337;
+const int DELAY = 2000;
 
-volatile int results [MAX_RESULTS];
-volatile int resultNumber;
+// Measured in Hz
+const int FEMALE_HIGH_FREQ = 10000;
+const int FEMALE_LOW_FREQ = 165;
+const int MALE_HIGH_FREQ = 155;
+const int MALE_LOW_FREQ = 85;
 
-volatile int count;
-volatile int adcCount;
+const int SILENCE_THRESH = 185;
 
-void setup ()
-{
-  count = 0;
-  adcCount = 0;
+/*
+ * LAB STEP 3
+ */
+const int CLOCKFREQ = 4000000; // FIXME;
 
+/*
+ * LAB STEP 8a
+ */
+const int PB_PIN = 10; // FIXME;
+
+const String song = "spooky:d=4,o=6,b=127:8c,f,8a,f,8c,b5,2g,8f,e,8g,e,8e5,a5,2f,8c,f,8a,f,8c,b5,2g,8f,e,8c,d,8e,1f,8c,8d,8e,8f,1p,8d,8e,8f_,8g,1p,8d,8e,8f_,8g,p,8d,8e,8f_,8g,p,c,8e,1f";
+int noteFrequencies[100];
+int noteDurations[100];
+int songLen;
+int count = 0;
+
+int currNote;
+ 
+volatile int intcount = 0;
+
+void setup() {
   Serial.begin(9600);
-  while(!Serial);
-  Serial.print("starting\n");
+  while (!Serial);
 
+  /*
+   * LAB STEP 8a
+   */
+  // TODO: Set piezo speaker as output:
+  PORT->Group[PORTB].DIR.reg |= 1 << PB_PIN;
+
+  /*
+   * LAB STEP 4
+   */
+  // TODO: Configure and enable GCLK4 for TC:
   GCLK->GENDIV.reg = GCLK_GENDIV_DIV(0) | GCLK_GENDIV_ID(4); // do not divide gclk 4
   while(GCLK->STATUS.bit.SYNCBUSY);
   
@@ -24,121 +54,116 @@ void setup ()
   GCLK->GENCTRL.reg = GCLK_GENCTRL_GENEN | GCLK_GENCTRL_ID(4) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_SRC_OSC8M;
   while(GCLK->STATUS.bit.SYNCBUSY);
 
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(4) | GCLK_CLKCTRL_ID(0x1b); 
-  while (GCLK->STATUS.bit.SYNCBUSY);
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(4) | GCLK_CLKCTRL_ID(0x1b);  
 
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_GEN_GCLK5 |  // Select GLCK5
-                        GCLK_CLKCTRL_ID_ADC |     // Connect to ADC
-                        GCLK_CLKCTRL_CLKEN; 
-  while (GCLK->STATUS.bit.SYNCBUSY);
 
+  /*
+   * LAB STEP 5
+   */
+  // TODO: Check if APB is enabled:
+  Serial.println(PM->APBCMASK.reg & (1 << 11), BIN); // FIXME: use PM->APBX.reg (change X to the correct letter and mask the relevant bit)
+
+  /*
+   * LAB STEP 6
+   */
+  // TODO: Disable TC (for now)
   TC3->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
   while(TC3->COUNT16.STATUS.bit.SYNCBUSY); // NOTE: ASK ABOUT THIS !!
 
   TC3->COUNT16.INTENCLR.reg |= TC_INTENCLR_MC0;
 
   // Set up NVIC:
-  // NVIC_SetPriority(TC3_IRQn, 0);
-  // NVIC_EnableIRQ(TC3_IRQn);
-
-  NVIC_SetPriority(TC3_IRQn, 0); // Set the priority of TC3 interrupt
-  NVIC_EnableIRQ(TC3_IRQn); // Enable TC3 interrupt
+  NVIC_SetPriority(TC3_IRQn, 0);
+  NVIC_EnableIRQ(TC3_IRQn);
 
   Serial.println("Initialized!");
 
-  // Reset Timer 1
-  TcCount16* TC = (TcCount16*) TC3; // Typecast TC3 to 16-bit counter
-  TC->CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_WAVEGEN_NFRQ | TC_CTRLA_PRESCALER_DIV8 | TC_CTRLA_ENABLE; // Enable TC3
-  while(TC->STATUS.bit.SYNCBUSY);
 
-  TC->CC[0].reg = 400; // Set the compare value for a 50 kHz frequency
+  playNoteDuration(30, 2000);
+  playNoteDuration(50, 2000);
 
-  TC->INTENSET.reg = TC_INTENSET_MC(1); // Enable compare channel 0 interrupt
-  while(TC->STATUS.bit.SYNCBUSY);
 
-  Serial.println ("timer TC3 interrupts enabled");
+} /* end of setup function */
+
+
+int stopped_playing = 1;
+
+
+/*
+ * Sets correct TC timer value and enables TC interrupt so that the interrupt (NOT this function)
+ * toggles the output pin at the desired frequency
+ * Non-blocking: note can play while program executes
+ */
+void playNote(int freq) {
+  // Reference TC with TC3->COUNT16.registername.reg
   
-  // Set up ADC
-  Serial.println ("setting up ADC");
-  // attachInterrupt(adcPin, ADC_Handler, CHANGE);
+  // TODO: Turn off interrupts to TC3 on MC0 when configuring
+  TC3->COUNT16.INTENCLR.reg |= TC_INTENCLR_MC0;
 
-  // ADC->CTRLB.reg = ADC_CTRLB_RESSEL_12BIT | ADC_CTRLB_PRESCALER_DIV16 | ADC_CTRLB_FREERUN; // 12-bit resolution, prescaler of 16
-  // while(ADC->STATUS.bit.SYNCBUSY);
-  // ADC->CTRLA.reg = ADC_CTRLA_ENABLE | ADC_CTRLA_PRESCALER_DIV512; // Enable ADC, free run mode, prescaler of 512
-  // while(ADC->STATUS.bit.SYNCBUSY);
+  // TODO: Configure TC3 to interrupt at the correct frequency
+  // Use TC3->COUNT16.CC[0].reg for CC0
+  TC3->COUNT16.CTRLA.reg = TC_CTRLA_ENABLE | TC_CTRLA_WAVEGEN(1) | TC_CTRLA_MODE(0) | TC_CTRLA_PRESCALER(1) | TC_CTRLA_PRESCSYNC(1);
+  while(TC3->COUNT16.STATUS.bit.SYNCBUSY); // NOTE: ASK ABOUT THIS !!
+
   
-  // // Set reference voltage to AVcc (5V)
-  // ADC->REFCTRL.reg = ADC_REFCTRL_REFSEL_INTVCC1;
-  // while(ADC->STATUS.bit.SYNCBUSY);
+  TC3->COUNT16.CC[0].reg = CLOCKFREQ/(2*freq);
+  while(TC3->COUNT16.STATUS.bit.SYNCBUSY); // NOTE: ASK ABOUT THIS !!
 
-  // // Set up ADC event system
-  // NVIC_SetPriority(ADC_IRQn, 0);
-  // NVIC_EnableIRQ(ADC_IRQn);
+  // TODO: Turn interrupts to TC3 on MC0 back on when done configuring
+  TC3->COUNT16.INTENSET.reg |= TC_INTENSET_MC0;
 
-  // ADC->CTRLA.bit.ENABLE = 0;  // Disable ADC
-  // ADC->CTRLB.bit.PRESCALER = 0x04; // Set prescaler to 16
-  // ADC->INTENSET.bit.RESRDY = 1; // Enable result ready interrupt
-  // ADC->INPUTCTRL.bit.MUXPOS = 0x01; // Set analog input to AIN0 (A0)
-  // ADC->CTRLA.bit.ENABLE = 1;  // Enable ADC
-  // ADC->CTRLA.bit.RUNSTDBY = 1; // Enable run in standby
-  // ADC->CTRLB.bit.FREERUN = 1; // Enable free-running mode
-  // while(ADC->STATUS.bit.SYNCBUSY);
+  stopped_playing = 0;
 
-  // NVIC_SetPriority(ADC_IRQn, 0);
-  // NVIC_EnableIRQ(ADC_IRQn);
-
-  Serial.println ("ADC set up");
-
-  // wait for buffer to fill
-  while (resultNumber < MAX_RESULTS) {
-    // Serial.println(analogRead(adcPin));
-    // Serial.print("adc count: ");
-    // Serial.println(adcCount);
-    // Serial.print("count: ");
-    // Serial.println(count);
-  }
-
-  Serial.println("results full");
-
-  for (int i = 0; i < MAX_RESULTS; i++) {
-    Serial.println (results [i]);
-  }
 }
 
+/*
+ * Disables TC timer and turns off output pin
+ */
+void stopPlay() {
+  // TODO: Reference TC with TC3->COUNT16.registername.reg
+  TC3->COUNT16.INTENCLR.reg |= TC_INTENCLR_MC0;
+  TC3->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
+  
+  // TODO (step 8a): Reference pin with PORT->Group[PORTB].registername.reg
+  PORT->Group[PORTB].OUTTGL.reg |= (1 << PB_PIN);
+
+  stopped_playing = 1;
+}
+
+/*
+ * Plays a given note for a given duration (a frequency of 0 is a rest, i.e. no sound should play for the duration)
+ * Blocking: everything except interrupts will have to wait for this function
+ */
+void playNoteDuration(int freq, int durMillis) {
+  // TODO: use playNote and stopPlay to write this function
+  if (freq != 0) {
+    playNote(freq);
+  }
+  delay(durMillis);
+  stopPlay();
+}
+
+
+long lastMillis = millis();
+
+// LOOPS 1200x per second, theoretically 600Hz is max we can read in
+// because nyquist's limit says we must sample 2x as the highest frequency we 
+// wish to read in. We're limited at sampling 1200x per second...
 void loop() {
-  // put your main code here, to run repeatedly:
-}
 
-void ADC_Handler() {
-  Serial.println("adc handler called");
-  adcCount = (adcCount + 1) % 100000;
-  if (resultNumber >= MAX_RESULTS) {
-    ADC->CTRLA.bit.ENABLE = 0;  // Turn off ADC
-  } else {
-    results [resultNumber++] = analogRead(adcPin);
-  }
+
+  count++;
 }
 
 void TC3_Handler() {
-  // if (resultNumber >= MAX_RESULTS) {
-  //   ADC->CTRLA.bit.ENABLE = 0;  // Turn off ADC
-  // } else {
-  //   results [resultNumber++] = analogRead(adcPin);
-  // }
-
-  // TC3->COUNT16.INTFLAG.reg |= TC_INTFLAG_MC0;
+  // TODO: Clear interrupt register flag
+  // (use register TC3->COUNT16.registername.reg)
+  TC3->COUNT16.INTFLAG.reg |= TC_INTFLAG_MC0;
   
-  // intcount += 1; // DO NOT DELETE THIS LINE
+  intcount += 1; // DO NOT DELETE THIS LINE
   
   // TODO (Step 8a) Toggle output pin
   // use PORT->Group[PORTB].registername.reg = (1 << PB_PIN)
-  // PORT->Group[PORTB].OUTTGL.reg = (1 << PB_PIN);
-
-  // count = (count + 1) % 100000;
-
-  TcCount16* TC = (TcCount16*) TC3; // Typecast TC3 to 16-bit counter
-  if (TC->INTFLAG.bit.MC0 == 1) {
-    TC->INTFLAG.bit.MC0 = 1; // Clear interrupt flag
-    ADC->SWTRIG.bit.START = 1; // Start ADC conversion
-  }  
+  PORT->Group[PORTB].OUTTGL.reg = (1 << PB_PIN);
 }
+

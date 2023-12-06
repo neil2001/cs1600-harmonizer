@@ -64,51 +64,6 @@ void setup() {
   NVIC_EnableIRQ(TC3_IRQn);
 
   Serial.println("Initialized!");
-  intcount = 0;
-  currNote = 0;
-
-  // testAllNotes(); // Remove for step 8b of the lab
-
-  /*
-   * LAB STEP 8b
-   */
-  // Parse a song
-
-  // songLen = rtttlToBuffers(song, noteFrequencies, noteDurations);
-  // if (songLen == -1) {
-  //   Serial.println("ERROR PARSING SONG!");
-  //   while(true);
-  // }
-
-  /*
-   * LAB STEP 9
-   */
-  // Clear and enable WDT
-  NVIC_DisableIRQ(WDT_IRQn);
-  NVIC_ClearPendingIRQ(WDT_IRQn);
-  NVIC_SetPriority(WDT_IRQn, 0);
-  NVIC_EnableIRQ(WDT_IRQn);
-
-  // TODO: Configure and enable WDT GCLK:
-  GCLK->GENDIV.reg = GCLK_GENDIV_DIV(4) | GCLK_GENDIV_ID(5);
-  while (GCLK->STATUS.bit.SYNCBUSY);
-  // set GCLK->GENCTRL.reg and GCLK->CLKCTRL.reg
-  GCLK->GENCTRL.reg |= GCLK_GENCTRL_DIVSEL | GCLK_GENCTRL_ID(5) | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_SRC(3);
-  while (GCLK->STATUS.bit.SYNCBUSY);
-  GCLK->CLKCTRL.reg |= GCLK_CLKCTRL_GEN(5) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_ID(3);
-  while (GCLK->STATUS.bit.SYNCBUSY);
-
-  // TODO: Configure and enable WDT:
-  // use WDT->CONFIG.reg, WDT->EWCTRL.reg, WDT->CTRL.reg
-  WDT->CONFIG.reg |= 1 << 12;
-  WDT->EWCTRL.reg |= 1 << 11;
-  WDT->CTRL.reg |= WDT_CTRL_ENABLE;
-  while(WDT->STATUS.bit.SYNCBUSY);
-
-
-  // TODO: Enable early warning interrupts on WDT:
-  // reference WDT registers with WDT->registername.reg
-  WDT->INTENSET.reg |= WDT_INTENSET_EW;
 } /* end of setup function */
 
 /*
@@ -163,7 +118,6 @@ void playNoteDuration(int freq, int durMillis) {
 
 void loop() {
   // TODO: play a song
-  playNoteDuration(880, 1000);
   // Serial.print("played note: ");
   // Serial.println(currNote);
   // if (currNote == (songLen-1)) {
@@ -173,11 +127,8 @@ void loop() {
   // } else {
   //   currNote++;
   // }
-
-  // TODO (Step 9): pet the watchdog
-  WDT->CLEAR.reg = 0xA5;
-
-  while(WDT->STATUS.bit.SYNCBUSY);
+  
+  playNote(400);
 }
 
 void TC3_Handler() {
@@ -192,11 +143,3 @@ void TC3_Handler() {
   PORT->Group[PORTB].OUTTGL.reg = (1 << PB_PIN);
 }
 
-void WDT_Handler() {
-  // TODO: Clear interrupt register flag
-  // (reference register with WDT->registername.reg)
-  WDT->INTFLAG.reg = 1;
-  
-  // TODO: Warn user that a watchdog reset may happen
-  Serial.println("HEYY WATCHDOG ABOUT TO BARK\n");
-}
