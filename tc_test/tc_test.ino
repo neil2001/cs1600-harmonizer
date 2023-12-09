@@ -4,7 +4,9 @@
  * Some more info about Timer Counter works can be found in this article: 
  * http://www.lucadavidian.com/2017/08/08/arduino-m0-pro-il-sistema-di-clock/
  * and in the datasheet: http://ww1.microchip.com/downloads/en/DeviceDoc/SAM_D21_DA1_Family_DataSheet_DS40001882F.pdf
-*/
+*/ 
+
+/* adapted from the   */ 
 
 uint32_t frequency = 20000; //sample rate in hz, determines how often TC5_Handler is called
 
