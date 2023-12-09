@@ -3,6 +3,9 @@
 // The speaker will read from buffer at SPEAKER_FREQUENCY
 // NOTE: Important to see how the microseconds TC5 is delayed by having analogWrite!!! Should be 50 microseconds
 
+/* 
+This file implements the harmonizing functuality on each of the buttons using granular synthesis 
+*/ 
 #define BUFSIZE 512
 const float SCALE_FACTOR = 0.9342492889f;// 440.f / 470.f;
 const float THIRD = 5.f / 4.f;
@@ -98,6 +101,10 @@ void TC5_Handler (void) {
  *  you shouldn't change these unless you know what you're doing
  */
 
+/* 
+
+*/ 
+
 //Configures the TC to generate output events at the sample frequency.
 //Configures the TC in Frequency Generation mode, with an event output once
 //each time the audio sample frequency period expires.
@@ -146,6 +153,9 @@ void TC5_Handler (void) {
   NVIC_EnableIRQ(TC5_IRQn);
 } 
 
+/* 
+
+*/ 
 //Function that is used to check if TC5 is done syncing
 //returns true when it is done syncing
 bool tcIsSyncing()
@@ -153,6 +163,9 @@ bool tcIsSyncing()
   return TC5->COUNT16.STATUS.reg & TC_STATUS_SYNCBUSY;
 }
 
+/* 
+
+*/ 
 //This function enables TC5 and waits for it to be ready
 void tcStartCounter()
 {
@@ -164,6 +177,9 @@ void tcStartCounter()
   while (tcIsSyncing()); //wait until snyc'd
 }
 
+/* 
+
+*/ 
 //Reset TC5 
 void tcReset()
 {
@@ -172,6 +188,9 @@ void tcReset()
   while (TC5->COUNT16.CTRLA.bit.SWRST);
 }
 
+/* 
+
+*/ 
 //disable TC5
 void tcDisable()
 {
@@ -179,6 +198,9 @@ void tcDisable()
   while (tcIsSyncing());
 }
 
+/* 
+
+*/ 
 void setup_ADC(){
   /* Enable GCLK1 for the ADC */
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN |
@@ -262,6 +284,10 @@ void setup_ADC(){
   ADC->CTRLA.bit.ENABLE = true;
 }
 
+
+/* 
+
+*/ 
 bool startedADC = false;
 bool completedADC = false;
 bool printedADCOnce = false;
@@ -306,6 +332,9 @@ int readADCSync(){
     return result;
 }
 
+/* 
+arduino ide setup 
+*/ 
 void setup() {
   Serial.begin(9600);
   while (!Serial);
@@ -335,6 +364,9 @@ void setup() {
 long lastMillis = 0;
 long curMillis = 0;
 
+/* 
+arduino ide loop 
+*/ 
 void loop() {
 
   // Buffer is being written to 27777.7 times per second
@@ -346,7 +378,7 @@ void loop() {
   buffer[inIdx++] = readADCSync();  
   inIdx %= BUFSIZE;
 
-
+//stuff for sanity check --> change when implementing tests 
   // curMillis = millis();
   // Serial.println(curMillis - lastMillis);
   // lastMillis = curMillis;
