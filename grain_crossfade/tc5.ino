@@ -1,12 +1,18 @@
+// extern int out;
+extern int nSamples;
+
+int crossfade();
+
 //this function gets called by the interrupt at <sampleRate>Hertz
 bool startedTC5 = false;
 bool completedTC5 = false;
 bool printedTC5Once = false;
 long lastTC5Micros, curTC5Micros;
+
 void TC5_Handler (void) {
   
-  int amplitude = buffer[outIdx];
-  outIdx = (outIdx + 1) % BUFSIZE;
+  int amplitude = crossfade();
+  if(++out >= nSamples) out = 0;
 
   // if (outIdx == 0) {
   //   WDT->CLEAR.reg = 0xA5;
