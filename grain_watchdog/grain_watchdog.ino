@@ -3,7 +3,7 @@
 // The speaker will read from buffer at SPEAKER_FREQUENCY
 // NOTE: Important to see how the microseconds TC5 is delayed by having analogWrite!!! Should be 50 microseconds
 
-#define BUFSIZE 512
+#define BUFSIZE 2048
 const float SCALE_FACTOR = 0.9342492889f;// 440.f / 470.f;
 const float THIRD = 5.f / 4.f;
 const float FIFTH = 3.f / 2.f;
@@ -353,6 +353,7 @@ void loop() {
   buffer[inIdx++] = readADCSync();  
   inIdx %= BUFSIZE;
   if (inIdx == 0) {
+    // Serial.println("petting watchdog");
     WDT->CLEAR.reg = 0xA5;
     while(WDT->STATUS.bit.SYNCBUSY);
   }
