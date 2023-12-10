@@ -1,10 +1,12 @@
 const int BTN_NORMAL = 0;
 const int BTN_THIRD = 1;
 const int BTN_FIFTH = 6;
+const int BTN_DARTH = 7;
 
 bool normalBtnOn = 0;
 bool thirdBtnOn = 0;
 bool fifthBtnOn = 0;
+bool darthBtnOn = 0;
 
 void normalISR(){
   if (DEBUG){
@@ -27,6 +29,13 @@ void fifthISR(){
   fifthBtnOn = true;
 }
 
+void darthISR(){
+  if (DEBUG){
+    Serial.println("DARTH");
+  }
+  darthBtnOn = true;
+}
+
 void resetButtons(){
-  normalBtnOn = thirdBtnOn = fifthBtnOn = false;
+  normalBtnOn = thirdBtnOn = fifthBtnOn = darthBtnOn = false;
 }
