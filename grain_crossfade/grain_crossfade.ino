@@ -4,7 +4,7 @@
 // NOTE: Important to see how the microseconds TC5 is delayed by having analogWrite!!! Should be 50 microseconds
 #define DEBUG true
 
-#define BUFSIZE 2048
+#define BUFSIZE 4096
 // #define BUFSIZE_THIRD 1024
 const float SCALE_FACTOR = 0.9342492889f;// 440.f / 470.f;
 const float THIRD = 5.f / 4.f;
@@ -20,18 +20,18 @@ int SPEAKER_PIN = A0;
 const int BUF_LEN = BUFSIZE;
 // int buffer[BUFSIZE] = {0};
 
-int buffer_xf[BUFSIZE] = {0};
+volatile int buffer_xf[BUFSIZE] = {0};
 
 // cross fade makes use of an extra buffer:
 // [......num samples ......|>>>>XFADE>>>] buffer of size BUFSIZE
 
-#define XFADE 128                      // Number of samples for cross-fade
+#define XFADE 32                    // Number of samples for cross-fade
 volatile int xf = 0;
 int nSamples = 1024;
 volatile int in = 0;
 volatile int out = 0;
 
-volatile int grain_duration = 10; // in millis
+volatile int grain_duration = 0; // in millis
 // volatile int inIdx, outIdx;
 
 extern const int BTN_NORMAL;
