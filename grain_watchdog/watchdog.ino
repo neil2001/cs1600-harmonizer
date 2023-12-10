@@ -29,11 +29,13 @@ void setup_watchdog() {
 }
 
 void WDT_Handler() {
-  // TODO: Clear interrupt register flag
+  // Clear interrupt register flag
   // (reference register with WDT->registername.reg)
   WDT->INTFLAG.reg = 1;
   
   // TODO: Warn user that a watchdog reset may happen
-  Serial.println("HEYY WATCHDOG ABOUT TO BARK\n");
+  if (DEBUG){
+    Serial.println("WATCHDOG ABOUT TO BARK\n");
+  }
 }
 

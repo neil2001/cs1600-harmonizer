@@ -72,8 +72,10 @@ void TC5_Handler (void) {
   // Prescaler range of DIV2 gives us enough range for what we need...
   prescaler = TC_CTRLA_PRESCALER_DIV2;
   period = SystemCoreClock / (2 * rate);
-  Serial.print("Prescaler set to "); Serial.println(prescaler >> TC_CTRLA_PRESCALER_Pos);
-  Serial.print("Period set to "); Serial.println(period);
+  if (DEBUG){
+    Serial.print("Prescaler set to "); Serial.println(prescaler >> TC_CTRLA_PRESCALER_Pos);
+    Serial.print("Period set to "); Serial.println(period);
+  }
 
   TC5->COUNT16.CTRLA.reg |= prescaler | TC_CTRLA_ENABLE; //it will divide GCLK_TC frequency by 1024
 
