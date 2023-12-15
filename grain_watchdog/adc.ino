@@ -1,3 +1,7 @@
+/**
+ * @brief Set the up ADC to convert voltages to 12-bit integer values every
+ *        36 microseconds
+ */
 void setup_ADC(){
   /* Enable GCLK1 for the ADC */
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN |

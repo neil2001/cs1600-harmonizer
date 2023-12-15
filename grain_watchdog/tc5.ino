@@ -11,10 +11,10 @@ void TC5_Handler (void) {
   
   int amplitude = readFromBuffer();
 
-  // if (outIdx == 0) {
-  //   WDT->CLEAR.reg = 0xA5;
-  //   while(WDT->STATUS.bit.SYNCBUSY);
-  // }
+  if (outIdx == 0) {
+    WDT->CLEAR.reg = 0xA5;
+    while(WDT->STATUS.bit.SYNCBUSY);
+  }
 
 
   if (DEBUG){
