@@ -4,7 +4,7 @@
 // NOTE: Important to see how the microseconds TC5 is delayed by having analogWrite!!! Should be 50 microseconds
 //Serial.begin(baudRate)
 #include "harmonizer.h"
-#include "buttons.h"
+#include "buttons.h
 #include "tests.h"
 
 #define DEBUG true
