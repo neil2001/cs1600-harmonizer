@@ -3,11 +3,8 @@
 // The speaker will read from buffer at SPEAKER_FREQUENCY
 // NOTE: Important to see how the microseconds TC5 is delayed by having analogWrite!!! Should be 50 microseconds
 //Serial.begin(baudRate)
-#include "grain_watchdog.h"
-
 #define DEBUG true
 #define BUFSIZE 1024
-#define FSM_TESTING false
 
 const float THIRD = 5.f / 4.f;
 const float FIFTH = 3.f / 2.f;
@@ -21,21 +18,22 @@ const long SCALED_SAMPLE_FREQUENCY = (SAMPLE_FREQUENCY * SCALE_FACTOR) - SCALE_O
 int MIC_PIN = A1;
 int SPEAKER_PIN = A0;
 
+const int BUF_LEN = BUFSIZE;
 int buffer[BUFSIZE] = {0};
 
+volatile int grain_duration = 10;
 volatile int inIdx, outIdx;
 
 extern const int BTN_NORMAL, BTN_THIRD, BTN_FIFTH, BTN_DARTH;
 extern bool normalBtnOn, thirdBtnOn, fifthBtnOn, darthBtnOn;
 
+float scaleFrequency(float frequency){
+  return (frequency * SCALE_FACTOR) - SCALE_OFFSET;
+}
+
 void setup() {
   Serial.begin(9600);
   while (!Serial);
-
-  if (FSM_TESTING){
-    testAllTests();
-    exit(0);
-  }
 
   pinMode(BTN_NORMAL, INPUT);
   pinMode(BTN_THIRD, INPUT);
@@ -61,7 +59,7 @@ void setup() {
   setup_watchdog();
 
   outIdx = 0;
-  inIdx = 10;
+  inIdx = outIdx + grain_duration;
 }
 
 long lastMillis = 0;
@@ -72,6 +70,13 @@ void updatePitch(float pitchFactor){
   tc5Configure(pitchedSpeakerFrequency);
   tcStartCounter();
 }
+
+typedef enum {
+  sNORMAL = 1,
+  sTHIRD = 2,
+  sFIFTH = 3,
+  sDARTH = 4,
+} state;
 
 state updateFSM(state curState, bool normalBtn=false, bool thirdBtn=false, bool fifthBtn=false, bool darthBtn=false){
   state nextState;

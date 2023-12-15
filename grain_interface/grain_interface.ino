@@ -371,7 +371,7 @@ void loop() {
 
   // Buffer is being written to 27777.7 times per second
   // meaning it completely fills buffer 277.7 (27,777.77 * 10ms / 1000ms)
-  // per second. And therefore fills the buffer every 0.0036ms
+  // per second. And therefore fil ls the buffer every 0.0036ms
   // This is extremely small and barely audible
   // Add read-in value to buffer and increment inIdx with wrap
   // NOTE: this function will delay the loop to x Hz/kHz
