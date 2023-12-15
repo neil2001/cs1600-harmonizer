@@ -8,6 +8,8 @@ typedef enum {
   sDARTH = 4,
 } state;
 
+typedef bool (*TestFunctionPtr)();
+
 /*
  * A struct to keep all three state inputs in one place
  */

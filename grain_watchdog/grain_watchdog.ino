@@ -8,6 +8,7 @@
 #define DEBUG true
 #define BUFSIZE 1024
 #define FSM_TESTING false
+#define BUFFER_TESTING true
 #define COUNTMAX 10000
 
 const float THIRD = 5.f / 4.f;
@@ -60,6 +61,11 @@ void setup() {
 
   setup_ADC();
   Serial.println("Initialized ADC");
+
+  if (BUFFER_TESTING) {
+    runBufferTests();
+    exit(0);
+  }
 
   setup_watchdog();
 
