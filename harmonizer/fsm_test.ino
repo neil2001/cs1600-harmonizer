@@ -1,15 +1,10 @@
-#include "grain_watchdog.h" 
+#include "harmonizer.h" 
+#include "tests.h"
 
-
-
-bool testTransition(state startState,
-                     state endState,
-                     state_inputs testInputs, 
-                     bool verbos);
 /*        
  * Helper function for printing states
  */
-char *s2str(state s) {
+const char *s2str(state s) {
   switch(s) {
     // case sSPEAKER_EMIT:
     // return "(0) SPEAKER_EMIT";

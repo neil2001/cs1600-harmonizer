@@ -67,8 +67,6 @@ void setup_ADC(){
                       ADC_INPUTCTRL_MUXNEG_GND |
                       ADC_INPUTCTRL_MUXPOS_PIN10;
 
-
-
   /* Set PB02 as an input pin. */
   PORT->Group[PORTB].DIRCLR.reg = PORT_PB02;
 
@@ -90,6 +88,13 @@ bool completedADC = false;
 bool printedADCOnce = false;
 long curADCMicros;
 long lastADCMicros;
+
+/**
+ * @brief Converts voltage from ADC to 12-bit value and returns it,
+ *        ADC should convert every 36 microseconds. 
+ * 
+ * @return int, an amplitude
+ */
 int readADCSync(){
   /* Wait for bus synchronization. */
     while (ADC->STATUS.bit.SYNCBUSY) {};

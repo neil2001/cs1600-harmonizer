@@ -3,34 +3,13 @@
 // The speaker will read from buffer at SPEAKER_FREQUENCY
 // NOTE: Important to see how the microseconds TC5 is delayed by having analogWrite!!! Should be 50 microseconds
 //Serial.begin(baudRate)
-#include "grain_watchdog.h"
+#include "harmonizer.h"
+#include "buttons.h"
+#include "tests.h"
 
 #define DEBUG true
-#define BUFSIZE 1024
 #define FSM_TESTING false
-#define BUFFER_TESTING true
-#define COUNTMAX 10000
-
-const float THIRD = 5.f / 4.f;
-const float FIFTH = 3.f / 2.f;
-const float NORMAL = 1.f;
-const float DARTH = 3.f / 4.f;
-const float SCALE_FACTOR = 0.9936721414f;//0.8343110211f; //0.9342492889f;
-const float SCALE_OFFSET = -0.4689031131f;//1.16839408f;
-const long SAMPLE_FREQUENCY = 23810;// 27778 rounded from 1/3.6e-5 = 27777.78
-const long SCALED_SAMPLE_FREQUENCY = (SAMPLE_FREQUENCY * SCALE_FACTOR) - SCALE_OFFSET;
-
-int MIC_PIN = A1;
-int SPEAKER_PIN = A0;
-
-int buffer[BUFSIZE] = {0};
-volatile int writecount = 0;
-volatile int readcount = 0;
-
-volatile int inIdx, outIdx;
-
-extern const int BTN_NORMAL, BTN_THIRD, BTN_FIFTH, BTN_DARTH;
-extern bool normalBtnOn, thirdBtnOn, fifthBtnOn, darthBtnOn;
+#define BUFFER_TESTING false
 
 void setup() {
   Serial.begin(9600);
@@ -68,20 +47,31 @@ void setup() {
   }
 
   setup_watchdog();
-
-  outIdx = 0;
-  inIdx = 10;
 }
 
-long lastMillis = 0;
-long curMillis = 0;
-
+/**
+ * @brief Recalculates the frequency with which to write buffer values out to speaker 
+ *        and then reconfigures and starts TC5 to that frequency
+ * @param pitchFactor, a float representing the multiplier with which to pitch the
+ *                     input frequency 
+ */
 void updatePitch(float pitchFactor){
   long pitchedSpeakerFrequency = SCALED_SAMPLE_FREQUENCY * pitchFactor;
   tc5Configure(pitchedSpeakerFrequency);
   tc5StartCounter();
 }
 
+/**
+ * @brief Updates the state of the harmonizer to sNORMAL, sTHIRD, sFIFTH, or sDARTH
+ *        based on inputs below... 
+ * 
+ * @param curState, the current state of the FSM 
+ * @param normalBtn, a bool representing if the normal button was pressed 
+ * @param thirdBtn, a bool representing if the third button was pressed
+ * @param fifthBtn, a bool representing if the fifth button was pressed
+ * @param darthBtn, a bool representing if the darth button was pressed,  
+ * @return state, the state to transition to next 
+ */
 state updateFSM(state curState, bool normalBtn=false, bool thirdBtn=false, bool fifthBtn=false, bool darthBtn=false){
   state nextState;
   switch(curState){
@@ -234,26 +224,31 @@ int readFromBuffer(int &index, int *amplitudes, int bufsize){
   return amplitude;
 }
 
+/**
+ * @brief Every 36 microseconds, inserts values read-in from the ADC
+ *        into the global circular buffer array and pets the watchdog.
+ *        Also resets the buttons every loop 
+ * 
+ */
 void loop() {
   static state CURRENT_STATE = sNORMAL;
 
-  // Buffer is being written to 27777.7 times per second
-  // meaning it completely fills buffer 277.7 (27,777.77 * 10ms / 1000ms)
-  // per second. And therefore fills the buffer every 0.0036ms
-  // This is extremely small and barely audible
-  // Add read-in value to buffer and increment inIdx with wrap
+  // Fills the buffer extremely fast (ideally every 0.0036ms)
+  // which is barely audible
   // NOTE: this function will delay the loop to x Hz/kHz
   insertToBuffer(readADCSync());
-  if (inIdx == 0) {
-    // Serial.println("petting watchdog");
-    WDT->CLEAR.reg = 0xA5;
-    while(WDT->STATUS.bit.SYNCBUSY);
-  }
 
+  // Pet the watchdog everytime the buffer finishes filling
+  if (inIdx == 0) pet_watchdog();
+
+  // Update the harmonizer state based on the button inputs set by the ISRs
   CURRENT_STATE = updateFSM(CURRENT_STATE, normalBtnOn, thirdBtnOn, fifthBtnOn, darthBtnOn);
 
   // Reset the buttons every loop
   resetButtons();
+
+  // For testing purposes we count how many times we read in a given
+  // elapsed time
   readcount++;
   readcount %= COUNTMAX;
 }
