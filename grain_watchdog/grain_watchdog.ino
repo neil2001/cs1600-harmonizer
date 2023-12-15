@@ -8,6 +8,7 @@
 #define DEBUG true
 #define BUFSIZE 1024
 #define FSM_TESTING false
+#define COUNTMAX 10000
 
 const float THIRD = 5.f / 4.f;
 const float FIFTH = 3.f / 2.f;
@@ -22,6 +23,8 @@ int MIC_PIN = A1;
 int SPEAKER_PIN = A0;
 
 int buffer[BUFSIZE] = {0};
+volatile int writecount = 0;
+volatile int readcount = 0;
 
 volatile int inIdx, outIdx;
 
@@ -193,5 +196,6 @@ void loop() {
 
   // Reset the buttons every loop
   resetButtons();
-
+  readcount++;
+  readcount %= COUNTMAX;
 }
