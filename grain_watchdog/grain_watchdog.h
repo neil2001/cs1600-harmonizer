@@ -20,6 +20,6 @@ typedef struct {
 #endif 
 
 void insertToBuffer(int amplitude);
-void insertToBuffer(int amplitude, int &index, int *amplitudes);
+void insertToBuffer(int amplitude, int &index, int *amplitudes, int bufsize);
 int readFromBuffer();
-int readFromBuffer(int &index, int *amplitudes);
+int readFromBuffer(int &index, int *amplitudes, int bufsize);

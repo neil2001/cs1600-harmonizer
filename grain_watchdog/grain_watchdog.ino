@@ -189,10 +189,11 @@ void insertToBuffer(int amplitude){
  * @param amplitude 
  * @param index 
  * @param amplitudes 
+ * @param bufsize 
  */
-void insertToBuffer(int amplitude, int &index, int *amplitudes){
+void insertToBuffer(int amplitude, int &index, int *amplitudes, int bufsize){
   amplitudes[index++] = amplitude;  
-  index %= BUFSIZE; 
+  index %= bufsize; 
 }
 
 /**
@@ -209,15 +210,18 @@ int readFromBuffer(){
 }
 
 /**
- * @brief 
+ * @brief Mock version of readFromBuffer where you may specify the
+ *        the index, amplitudes, and bufsize 
  * 
  * @param index 
  * @param amplitudes 
- * @return int 
+ * @param bufsize 
+ * @return int, the amplitude at amplitudes[index] and the index
+ *         should be incremented and wrap if equal to bufsize 
  */
-int readFromBuffer(int &index, int *amplitudes){
+int readFromBuffer(int &index, int *amplitudes, int bufsize){
   int amplitude = amplitudes[index];
-  index = (index + 1) % BUFSIZE;
+  index = (index + 1) % bufsize;
   return amplitude;
 }
 
