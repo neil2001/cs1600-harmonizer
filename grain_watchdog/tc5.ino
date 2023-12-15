@@ -1,9 +1,13 @@
 //this function gets called by the interrupt at <sampleRate>Hertz
+
 bool startedTC5 = false;
 bool completedTC5 = false;
 bool printedTC5Once = false;
 long lastTC5Micros, curTC5Micros;
+
 void TC5_Handler (void) {
+  writecount++;
+  writecount %= COUNTMAX;
   
   int amplitude = readFromBuffer();
 
