@@ -18,3 +18,8 @@ typedef struct {
   bool darthBtn; 
 } state_inputs;
 #endif 
+
+void insertToBuffer(int amplitude);
+void insertToBuffer(int amplitude, int &index, int *amplitudes);
+int readFromBuffer();
+int readFromBuffer(int &index, int *amplitudes);

@@ -53,7 +53,7 @@ void setup() {
   // Initial speaker frequency set to normal 1:1
   tc5Configure(SCALED_SAMPLE_FREQUENCY);
   Serial.println("Initialized TC5, starting TC5");
-  tcStartCounter();
+  tc5StartCounter();
 
   setup_ADC();
   Serial.println("Initialized ADC");
@@ -70,7 +70,7 @@ long curMillis = 0;
 void updatePitch(float pitchFactor){
   long pitchedSpeakerFrequency = SCALED_SAMPLE_FREQUENCY * pitchFactor;
   tc5Configure(pitchedSpeakerFrequency);
-  tcStartCounter();
+  tc5StartCounter();
 }
 
 state updateFSM(state curState, bool normalBtn=false, bool thirdBtn=false, bool fifthBtn=false, bool darthBtn=false){
@@ -172,6 +172,55 @@ state updateFSM(state curState, bool normalBtn=false, bool thirdBtn=false, bool 
   return nextState;
 }
 
+/**
+ * @brief Inserts one 12-bit amplitude into the global buffer array at inIdx
+ *        Ensures inIdx increments such that it wraps around to start of buffer
+ * 
+ * @param amplitude, the 12-bit integer amplitude to insert 
+ */
+void insertToBuffer(int amplitude){
+  buffer[inIdx++] = amplitude;  
+  inIdx %= BUFSIZE; 
+}
+
+/**
+ * @brief Mocked version of insertToBuffer for testing 
+ * 
+ * @param amplitude 
+ * @param index 
+ * @param amplitudes 
+ */
+void insertToBuffer(int amplitude, int &index, int *amplitudes){
+  amplitudes[index++] = amplitude;  
+  index %= BUFSIZE; 
+}
+
+/**
+ * @brief Reads one value from the global buffer array at index, outIdx, and returns it
+ *        Ensures that outIdx is incremented such that it if it's at the end, it will
+ *        wrap around to beginning
+ * 
+ * @return int, the 12-bit amplitude stored in buffer at outIdx
+ */
+int readFromBuffer(){
+  int amplitude = buffer[outIdx];
+  outIdx = (outIdx + 1) % BUFSIZE;
+  return amplitude;
+}
+
+/**
+ * @brief 
+ * 
+ * @param index 
+ * @param amplitudes 
+ * @return int 
+ */
+int readFromBuffer(int &index, int *amplitudes){
+  int amplitude = amplitudes[index];
+  index = (index + 1) % BUFSIZE;
+  return amplitude;
+}
+
 void loop() {
   static state CURRENT_STATE = sNORMAL;
 
@@ -181,8 +230,7 @@ void loop() {
   // This is extremely small and barely audible
   // Add read-in value to buffer and increment inIdx with wrap
   // NOTE: this function will delay the loop to x Hz/kHz
-  buffer[inIdx++] = readADCSync();  
-  inIdx %= BUFSIZE;
+  insertToBuffer(readADCSync());
   if (inIdx == 0) {
     // Serial.println("petting watchdog");
     WDT->CLEAR.reg = 0xA5;

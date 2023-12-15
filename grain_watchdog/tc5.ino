@@ -5,8 +5,7 @@ bool printedTC5Once = false;
 long lastTC5Micros, curTC5Micros;
 void TC5_Handler (void) {
   
-  int amplitude = buffer[outIdx];
-  outIdx = (outIdx + 1) % BUFSIZE;
+  int amplitude = readFromBuffer();
 
   // if (outIdx == 0) {
   //   WDT->CLEAR.reg = 0xA5;
@@ -48,14 +47,14 @@ void TC5_Handler (void) {
 //each time the audio sample frequency period expires.
  void tc5Configure(int rate)
 {
-  tcDisable();
+  tc5Disable();
 
 
   // select the generic clock generator used as source to the generic clock multiplexer
   GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID(GCM_TC4_TC5)) ;
   while (GCLK->STATUS.bit.SYNCBUSY);
 
-  tcReset(); //reset TC5
+  tc5Reset(); //reset TC5
 
   // Set Timer counter 5 Mode to 16 bits, it will become a 16bit counter ('mode1' in the datasheet)
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;
@@ -85,7 +84,7 @@ void TC5_Handler (void) {
   //this is how we fine-tune the frequency, make it count to a lower or higher value
   //system clock should be 1MHz (8MHz/8) at Reset by default
   TC5->COUNT16.CC[0].reg = (uint16_t) (period);
-  while (tcIsSyncing());
+  while (tc5IsSyncing());
   
   // Configure interrupt request
   NVIC_DisableIRQ(TC5_IRQn);
@@ -96,33 +95,33 @@ void TC5_Handler (void) {
 
 //Function that is used to check if TC5 is done syncing
 //returns true when it is done syncing
-bool tcIsSyncing()
+bool tc5IsSyncing()
 {
   return TC5->COUNT16.STATUS.reg & TC_STATUS_SYNCBUSY;
 }
 
 //This function enables TC5 and waits for it to be ready
-void tcStartCounter()
+void tc5StartCounter()
 {
     // Enable the TC5 interrupt request
   TC5->COUNT16.INTENSET.bit.MC0 = 1;
-  while (tcIsSyncing()); //wait until TC5 is done syncing 
+  while (tc5IsSyncing()); //wait until TC5 is done syncing 
 
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE; //set the CTRLA register
-  while (tcIsSyncing()); //wait until snyc'd
+  while (tc5IsSyncing()); //wait until snyc'd
 }
 
 //Reset TC5 
-void tcReset()
+void tc5Reset()
 {
   TC5->COUNT16.CTRLA.reg = TC_CTRLA_SWRST;
-  while (tcIsSyncing());
+  while (tc5IsSyncing());
   while (TC5->COUNT16.CTRLA.bit.SWRST);
 }
 
 //disable TC5
-void tcDisable()
+void tc5Disable()
 {
   TC5->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
-  while (tcIsSyncing());
+  while (tc5IsSyncing());
 }

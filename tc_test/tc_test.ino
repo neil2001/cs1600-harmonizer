@@ -1,12 +1,5 @@
-/*
- * This sketch illustrates how to set a timer on an SAMD21 based board in Arduino (Feather M0, Arduino Zero should work)
- * It should generate a 1Hz square wave as it is (thanks richdrich for the suggestion)
- * Some more info about Timer Counter works can be found in this article: 
- * http://www.lucadavidian.com/2017/08/08/arduino-m0-pro-il-sistema-di-clock/
- * and in the datasheet: http://ww1.microchip.com/downloads/en/DeviceDoc/SAM_D21_DA1_Family_DataSheet_DS40001882F.pdf
-*/ 
-
-/* adapted from the   */ 
+/*  This file tests whether we can set TC5 timer counter
+    to a specified frequency in Hz. */ 
 
 uint32_t frequency = 20000; //sample rate in hz, determines how often TC5_Handler is called
 
@@ -19,13 +12,11 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
 
-  tcConfigure(frequency); //configure the timer to run at <sampleRate>Hertz
-  tcStartCounter(); //starts the timer
+  tc5Configure(frequency); //configure the timer to run at <sampleRate>Hertz
+  tc5StartCounter(); //starts the timer
 }
 
 void loop() {
-  //tcDisable(); //This function can be used anywhere if you need to stop/pause the timer
-  //tcReset(); //This function should be called everytime you stop the timer
 }
 
 //this function gets called by the interrupt at <sampleRate>Hertz
@@ -46,25 +37,20 @@ void TC5_Handler (void) {
     Serial.println(curMicros - lastMicros);
   }
 
-  // END OF YOUR CODE
-  TC5->COUNT16.INTFLAG.bit.MC0 = 1; //Writing a 1 to INTFLAG.bit.MC0 clears the interrupt so that it will run again
+  // Writing a 1 to INTFLAG.bit.MC0 clears the interrupt so that it will run again
+  TC5->COUNT16.INTFLAG.bit.MC0 = 1; 
 }
-
-/* 
- *  TIMER SPECIFIC FUNCTIONS FOLLOW
- *  you shouldn't change these unless you know what you're doing
- */
 
 //Configures the TC to generate output events at the sample frequency.
 //Configures the TC in Frequency Generation mode, with an event output once
 //each time the audio sample frequency period expires.
- void tcConfigure(int rate)
+ void tc5Configure(int rate)
 {
  // select the generic clock generator used as source to the generic clock multiplexer
  GCLK->CLKCTRL.reg = (uint16_t) (GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID(GCM_TC4_TC5)) ;
  while (GCLK->STATUS.bit.SYNCBUSY);
 
-  tcReset(); //reset TC5
+  tc5Reset(); //reset TC5
 
   // Set Timer counter 5 Mode to 16 bits, it will become a 16bit counter ('mode1' in the datasheet)
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;
@@ -90,7 +76,7 @@ void TC5_Handler (void) {
  //this is how we fine-tune the frequency, make it count to a lower or higher value
  //system clock should be 1MHz (8MHz/8) at Reset by default
  TC5->COUNT16.CC[0].reg = (uint16_t) (period);
- while (tcIsSyncing());
+ while (tc5IsSyncing());
  
  // Configure interrupt request
  NVIC_DisableIRQ(TC5_IRQn);
@@ -100,34 +86,34 @@ void TC5_Handler (void) {
 
  // Enable the TC5 interrupt request
  TC5->COUNT16.INTENSET.bit.MC0 = 1;
- while (tcIsSyncing()); //wait until TC5 is done syncing 
+ while (tc5IsSyncing()); //wait until TC5 is done syncing 
 } 
 
 //Function that is used to check if TC5 is done syncing
 //returns true when it is done syncing
-bool tcIsSyncing()
+bool tc5IsSyncing()
 {
   return TC5->COUNT16.STATUS.reg & TC_STATUS_SYNCBUSY;
 }
 
 //This function enables TC5 and waits for it to be ready
-void tcStartCounter()
+void tc5StartCounter()
 {
   TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE; //set the CTRLA register
-  while (tcIsSyncing()); //wait until snyc'd
+  while (tc5IsSyncing()); //wait until snyc'd
 }
 
 //Reset TC5 
-void tcReset()
+void tc5Reset()
 {
   TC5->COUNT16.CTRLA.reg = TC_CTRLA_SWRST;
-  while (tcIsSyncing());
+  while (tc5IsSyncing());
   while (TC5->COUNT16.CTRLA.bit.SWRST);
 }
 
 //disable TC5
-void tcDisable()
+void tc5Disable()
 {
   TC5->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
-  while (tcIsSyncing());
+  while (tc5IsSyncing());
 }
