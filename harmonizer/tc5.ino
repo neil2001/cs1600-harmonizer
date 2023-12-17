@@ -5,6 +5,18 @@ bool completedTC5 = false;
 bool printedTC5Once = false;
 long lastTC5Micros, curTC5Micros;
 
+/**
+ * @brief Writes given 12-bit amplitude to the speaker DAC 
+ * @param amplitude 
+ */
+void emitToSpeaker(int amplitude){
+  analogWrite(SPEAKER_PIN, amplitude);
+}
+
+/**
+ * @brief Handles reading amplitudes from global circular buffer array
+ *        and writing to the speaker at a defined frequency 
+ */
 void TC5_Handler (void) {
   writecount++;
   writecount %= COUNTMAX;
@@ -34,7 +46,7 @@ void TC5_Handler (void) {
     }
   }
 
-  analogWrite(SPEAKER_PIN, amplitude);
+  emitToSpeaker(amplitude);
 
 
   // END OF YOUR CODE
